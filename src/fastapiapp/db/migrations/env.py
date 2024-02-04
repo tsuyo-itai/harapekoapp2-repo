@@ -15,12 +15,12 @@ load_dotenv(verbose=True)
 dotenv_path = os.path.join(os.path.dirname(__file__), '../.env')
 load_dotenv(dotenv_path)
 
-user_name = os.environ.get('DB_USER_NAME')
+user_name = os.environ.get('DB_USERNAME')
 password = os.environ.get('DB_PASSWORD')
 host = os.environ.get('DB_HOST')
-database_name = os.environ.get('DB_NAME')
+database_name = os.environ.get('DB_DATABASE')
 
-DATABASE = "mysql+mysqlconnector://root:password@db:3306/develop_harapeko"
+DATABASE = f'mysql+mysqlconnector://{user_name}:{password}@{host}:3306/{database_name}'
 
 
 # this is the Alembic Config object, which provides

@@ -2,9 +2,15 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, MetaDat
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from datetime import datetime
+import os
 
 # MySQL接続情報
-DATABASE_URL = "mysql+mysqlconnector://root:password@db:3306/develop_harapeko"
+user_name = os.environ.get('DB_USERNAME')
+password = os.environ.get('DB_PASSWORD')
+host = os.environ.get('DB_HOST')
+database_name = os.environ.get('DB_DATABASE')
+
+DATABASE_URL = f'mysql+mysqlconnector://{user_name}:{password}@{host}:3306/{database_name}'
 
 # SQLAlchemyエンジンの作成
 engine = create_engine(DATABASE_URL)

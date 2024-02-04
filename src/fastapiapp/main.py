@@ -2,13 +2,13 @@ from fastapi import FastAPI, HTTPException
 from starlette.middleware.cors import CORSMiddleware # 追加
 # from routers import route_test
 # from routers.api.v1 import route_api
-from routers.api.v1.user import router_user
+from routers.api.v1.user import user_router
 from mangum import Mangum
 
 app = FastAPI()
 # app.include_router(route_test.test_router)
 # app.include_router(route_api.api_v1_router)
-app.include_router(router_user)
+app.include_router(user_router)
 handler = Mangum(app)
 
 # CORSの対応を行う

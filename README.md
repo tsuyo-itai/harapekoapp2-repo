@@ -70,7 +70,7 @@ alembic upgrade head
 cd db
 alembic init migrations
 # マイグレーションファイルの作成 (DBの更新のたびにこれが必要)
-alembic revision --autogenerate -m 'comments'
+alembic revision --autogenerate -m 'users'
 ```
 
 #### マイグレーションがうまく行かない場合
