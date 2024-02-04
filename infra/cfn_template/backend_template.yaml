@@ -1,0 +1,611 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: DocumentDB With EC2 CloudFormation
+
+Parameters:
+  # リソース名が被らないようにPrefixを設定する
+  ResourceNamePrefix:
+    Type: String
+
+  # キーペアについてはコンソールで作成したものを使用する
+  KeyPairName:
+    Description: The EC2 Key Pair to allow SSH access to the instance
+    Type: "AWS::EC2::KeyPair::KeyName"
+
+  # EC2のイメージはAmazonLinuxの最新
+  Ec2ImageId:
+    Description: EC2 Image
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
+  # EC2インスタンスアクセス用IP
+  SSHAccessIP:
+    Description: Global IP for SSH access to EC2
+    Type: String
+    Default: 0.0.0.0/0
+
+  DocDBMasterUsername:
+    Description: DocumentDB UserName
+    Type: String
+    Default: root
+
+  DocDBMasterUserPassword:
+    Description: DocumentDB Password
+    Type: String
+    Default: password
+
+  S3CodeBucket:
+    Description: code exist s3 bucket
+    Type: String
+
+  ResourceEnvironment:
+    Type: String
+    Default: development
+
+  # ApiHostZoneName:
+  #   Type: String
+  #   Default: hoge.net.
+  
+  # ApiDomainName:
+  #   Type: String
+  #   Default: hoge.hoge.net
+
+  # SslCertificateArn:
+  #   # 事前に作成しておく
+  #   Type: String
+  #   Description: Select an SSL Certificate ARN
+  #   Default: arn:aws:acm:us-east-1:xxxxxxxxxxxx:certificate/xxxxxx-xxxxxxx-xxxxxxxx-xxxxxx
+
+
+Resources:
+  # VPCの作成
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      # EnableDnsSupport: true
+      # EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-vpc-cfn
+
+  # インターネットゲートウェイの作成
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-igw-cfn
+
+  # インターネットゲートウェイをVPCにアタッチ
+  AttachIGW:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref IGW
+
+# ------------------------------------------------------------#
+#  パブリックサブネット Definition
+# ------------------------------------------------------------#
+  # パブリックサブネット(AZ-1)
+  PubSubnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-1a
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-pub-subnet-1a-cfn
+
+  # パブリックサブネット(AZ-1)のルートテーブル
+  PubSubnet1aRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-pub-subnet-1a-rt-cfn
+
+  # パブリックサブネット(AZ-1)-インターネット間のルーティング
+  PubSubnet1aToInternet:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PubSubnet1aRT
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+
+  # ルートテーブルをパブリックサブネット(AZ-1)に関連付け
+  AssocPubSubnet1aRT:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PubSubnet1a
+      RouteTableId: !Ref PubSubnet1aRT
+
+  # パブリックサブネット(AZ-2)
+  PubSubnet1c:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-1c
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.10.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-pub-subnet-1c-cfn
+
+  # パブリックサブネット(AZ-2)のルートテーブル
+  PubSubnet1cRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-pub-subnet-1c-rt-cfn
+
+  # パブリックサブネット(AZ-2)-インターネット間のルーティング
+  PubSubnet1cToInternet:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PubSubnet1cRT
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+
+  # ルートテーブルをパブリックサブネット(AZ-2)に関連付け
+  AssocPubSubnet1cRT:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PubSubnet1c
+      RouteTableId: !Ref PubSubnet1cRT
+
+# ------------------------------------------------------------#
+#  プライベートサブネット Definition
+# ------------------------------------------------------------#
+  # プライベートサブネット(AZ-1)
+  PriSubnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-1a
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-pri-subnet-1a-cfn
+
+  # プライベートサブネット(AZ-1)のルートテーブル
+  PriSubnet1aRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-pri-subnet-1a-rt-cfn
+
+  # ルートテーブルをプライベートサブネット(AZ-1)に関連付け
+  AssocPriSubnet1aRT:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PriSubnet1a
+      RouteTableId: !Ref PriSubnet1aRT
+
+  # プライベートサブネット(AZ-2)
+  PriSubnet1c:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-1c
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.20.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-pri-subnet-1c-cfn
+
+  # プライベートサブネット(AZ-2)のルートテーブル
+  PriSubnet1cRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-pri-subnet-1c-rt-cfn
+
+  # ルートテーブルをプライベートサブネット(AZ-2)に関連付け
+  AssocPriSubnet1cRT:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PriSubnet1c
+      RouteTableId: !Ref PriSubnet1cRT
+
+# ------------------------------------------------------------#
+#  DocumentDB Definition
+# ------------------------------------------------------------#
+  # DBサブネットグループ
+  DocDBSubnetGroup:
+    Type: AWS::DocDB::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: DocDB Subnet Group
+      DBSubnetGroupName: !Sub ${ResourceNamePrefix}-docdb-subnetgroup
+      SubnetIds:
+        - !Ref PriSubnet1a
+        - !Ref PriSubnet1c
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-docdb-subnetgroup
+
+  DocDBClusterParameterGroup:
+    Type: AWS::DocDB::DBClusterParameterGroup
+    Properties:
+      Description: 'docDB4.0.0ClusterParameterGroup'
+      Family: docdb4.0
+      Name: !Sub ${ResourceNamePrefix}-docDBCluster-ParameterGroup
+      Parameters:
+        audit_logs: disabled
+        profiler: disabled
+        profiler_sampling_rate: 1.0
+        profiler_threshold_ms: 100
+        tls: enabled
+        ttl_monitor: enabled
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-docDBCluster-ParameterGroup
+
+  DocDBCluster:
+    Type: AWS::DocDB::DBCluster
+    Properties:
+      BackupRetentionPeriod: '1'
+      DBClusterIdentifier: !Sub ${ResourceNamePrefix}-docdb-cluster
+      DBClusterParameterGroupName: !Ref DocDBClusterParameterGroup
+      DBSubnetGroupName: !Ref DocDBSubnetGroup
+      DeletionProtection: false
+      EngineVersion: 4.0.0
+      MasterUsername: !Ref DocDBMasterUsername
+      MasterUserPassword: !Ref DocDBMasterUserPassword
+      Port: 27017
+      StorageEncrypted: true
+      Tags:
+        - Key: Name
+          Value: docDB-Cluster
+      VpcSecurityGroupIds: 
+        - !Ref DocDBSecurityGroup 
+
+  DocDBInstance1a:
+    Type: AWS::DocDB::DBInstance
+    Properties:
+      AutoMinorVersionUpgrade: false
+      AvailabilityZone: ap-northeast-1a
+      DBClusterIdentifier: !Ref DocDBCluster
+      DBInstanceIdentifier: !Sub ${ResourceNamePrefix}-docdb1a
+      DBInstanceClass: 'db.t3.medium'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-docdb-instance1a
+
+# ------------------------------------------------------------#
+#  Lambda Definition
+# ------------------------------------------------------------#
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ResourceNamePrefix}-voteapp-lambda
+      Handler: main.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref S3CodeBucket
+        S3Key: lambda_function.zip
+      Runtime: python3.11
+      Timeout: 30
+      Environment:
+        Variables:
+          DB_PATH: !Sub mongodb://${DocDBMasterUsername}:${DocDBMasterUserPassword}@${DocDBCluster.Endpoint}:27017/?tls=true&tlsCAFile=cert/documentdb/global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref PubSubnet1a
+
+  LambdaPermissionRootPath:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*/
+    DependsOn:
+      - LambdaFunction
+      - ApiGatewayRestApi
+
+  LambdaPermissionProxyPath:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*/{proxy+}
+    DependsOn:
+      - LambdaFunction
+      - ApiGatewayRestApi
+
+  # ApiGatewayRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: sts:AssumeRole
+  #           Principal:
+  #             Service:
+  #               - apigateway.amazonaws.com
+  #     Policies:
+  #       - PolicyName: !Sub "${ResourceNamePrefix}-InvokeFunctionPolicy"
+  #         PolicyDocument:
+  #           Version: 2012-10-17
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - lambda:InvokeFunction
+  #               Resource: "*"
+
+# ------------------------------------------------------------#
+#  Sequrity Group Definition
+# ------------------------------------------------------------#
+  DocDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for DocDB cluster
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 27017
+          ToPort: 27017
+          CidrIp: 0.0.0.0/0 # Note: This is open to all, consider tightening security
+
+  # EC2インスタンスのセキュリティグループ
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: ec2-sg-cfn-off-jt
+      GroupDescription: Allow SSH access
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        # # http
+        # - IpProtocol: tcp
+        #   FromPort: 80
+        #   ToPort: 80
+        #   CidrIp: 0.0.0.0/0
+        # ssh
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHAccessIP
+        # # 自セキュリティグループからの許可 (踏み台インスタンス等を使用したとき)
+        # - IpProtocol: tcp
+        #   FromPort: 22
+        #   ToPort: 22
+        #   SourceSecurityGroupId: !Ref EC2SecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourceNamePrefix}-ec2-sg-cfn
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Lambda function
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 27017
+          ToPort: 27017
+          CidrIp: 0.0.0.0/0 # Note: This is open to all, consider tightening security
+
+# ------------------------------------------------------------#
+# API Gateway
+# ------------------------------------------------------------#
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub ${ResourceNamePrefix}-${ResourceEnvironment}-API
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # CustomDomainName:
+  #   Type: AWS::ApiGateway::DomainName
+  #   Properties:
+  #     DomainName: !Ref ApiDomainName
+  #     CertificateArn: !Ref SslCertificateArn
+
+  # ApiDomainMapping:
+  #   Type: AWS::ApiGateway::BasePathMapping
+  #   Properties:
+  #     DomainName: !Ref CustomDomainName
+  #     RestApiId: !Ref ApiGatewayRestApi
+  #     Stage: !Ref ResourceEnvironment
+
+  ApiGatewayRootMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !GetAtt ApiGatewayRestApi.RootResourceId
+      HttpMethod: ANY
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        # IntegrationHttpMethod: ANY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ResourceNamePrefix}-voteapp-lambda/invocations"
+    DependsOn:
+      - LambdaPermissionRootPath
+      - LambdaPermissionProxyPath
+
+  ApiGatewayPathResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: "{proxy+}"
+
+  ApiGatewayPathMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ApiGatewayPathResource
+      HttpMethod: ANY
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        ConnectionType: INTERNET
+        # Credentials: !GetAtt ApiGatewayRole.Arn
+        IntegrationHttpMethod: POST
+        # IntegrationHttpMethod: ANY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ResourceNamePrefix}-voteapp-lambda/invocations"
+    DependsOn:
+      - LambdaPermissionRootPath
+      - LambdaPermissionProxyPath
+
+  # ステージの作成
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      StageName: !Ref ResourceEnvironment
+      DeploymentId: !Ref ApiGatewayDeployment
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ApiGatewayRootMethod
+      - ApiGatewayPathMethod
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+
+  # #############################################
+  # # Route53
+  # #############################################
+  # # CNAMEを作成
+  # ApiCNamerecord:
+  #   Type: 'AWS::Route53::RecordSet'
+  #   Properties:
+  #     HostedZoneName: !Ref ApiHostZoneName
+  #     Name: !Ref ApiDomainName
+  #     Type: CNAME
+  #     TTL: '300'
+  #     ResourceRecords:
+  #       - !GetAtt CustomDomainName.DistributionDomainName
+
+# ------------------------------------------------------------#
+#  IAM Definition
+# ------------------------------------------------------------#
+  # IAMポリシー
+  SSMAccessPolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: ssmaccess
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+            - "ssm:DescribeAssociation"
+            - "ssmmessages:*"
+            - "ssm:UpdateInstanceInformation"
+            - "ec2messages:*"
+          Resource: "*"
+      Roles:
+      - !Ref IAMSSMRole
+
+  # AWS Session Manager(SSM)で必要なIAMロール
+  IAMSSMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-SSM-role-cfn
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - Ref: IAMSSMRole
+      InstanceProfileName: !Sub ${ResourceNamePrefix}-EC2InstanceProfile-cfn
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-LambdaExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${ResourceNamePrefix}-LambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 'arn:aws:logs:*:*:*'
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                Resource: '*'
+
+# ------------------------------------------------------------#
+#  EC2 Definition
+# ------------------------------------------------------------#
+  # EC2インスタンス(AZ-1)の作成
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties: 
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      ImageId: !Ref Ec2ImageId
+      KeyName: !Ref KeyPairName
+      InstanceType: t2.micro
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref PubSubnet1a
+          GroupSet:
+            - !Ref EC2SecurityGroup
+      UserData: !Base64
+        Fn::Sub: |
+          #!/bin/bash
+          echo -e "[mongodb-org-5.0]\nname=MongoDB Repository\nbaseurl=https://repo.mongodb.org/yum/amazon/2/mongodb-org/5.0/x86_64/\ngpgcheck=1\nenabled=1\ngpgkey=https://www.mongodb.org/static/pgp/server-5.0.asc" | sudo tee /etc/yum.repos.d/mongodb-org-5.0.repo
+          sudo yum install -y mongodb-org
+      Tags:
+          - Key: Name
+            Value: !Sub ${ResourceNamePrefix}-ec2-cfn
+
+Outputs:
+  EC2InstancePublicIp:
+    Description: Public IP address of the EC2 instance
+    Value: !GetAtt EC2Instance.PublicIp
+  DocumentDBEndpoint:
+    Description: The endpoint of the DocumentDB cluster
+    Value: !GetAtt DocDBCluster.Endpoint
+  DocumentDBClusterIdentifier:
+    Description: The identifier of the DocumentDB cluster
+    Value: !Ref DocDBCluster

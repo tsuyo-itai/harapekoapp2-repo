@@ -1,0 +1,60 @@
+services:
+
+  webapi:
+    container_name: "fastapi_webapi"
+    build:
+      context: ./fastapiapp
+    image: fastapi_image
+    command: bash -c "sh launch.sh"
+    volumes:
+      - ./fastapiapp:/fastapiapp
+    env_file:
+      - .env
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+
+  frontend:
+    container_name: "vite_frontend"
+    build:
+      context: ./viteapp
+    image: vite_image
+    volumes:
+      - ./viteapp:/viteapp
+    ports:
+      - 5173:5173 # 本番で動かす際はコメントアウト
+      - 4173:4173 # ビルドしたVueの動作用 本番で動かす際はコメントアウト
+    tty: true
+
+  # db:
+  #   image: mongo:latest
+  #   container_name: mongodb_db
+  #   ports:
+  #     - "27017:27017"
+  #   environment:
+  #     # TODO envファイルで管理
+  #     MONGO_INITDB_ROOT_USERNAME: root
+  #     MONGO_INITDB_ROOT_PASSWORD: password
+  #   # volumes:
+  #     # - mongodb_data:/data/db
+
+  db:
+    # コンテナ名の指定
+    container_name: mysql_db
+    image: mysql:5.7
+    platform: linux/amd64
+    # DBのレコードが日本語だと文字化けするので、utf8をセットする
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: root
+      TZ: "Asia/Tokyo"
+    ports:
+      - "3306:3306"
+    # ローカルにDBを持つ
+    volumes:
+      - ./tmp/db:/var/lib/mysql
+
+# volumes:
+  # mongodb_data:
