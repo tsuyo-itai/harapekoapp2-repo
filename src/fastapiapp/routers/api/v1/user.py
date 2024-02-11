@@ -2,11 +2,21 @@ from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from sqlalchemy.orm import Session
 import cruds
 from db.database import get_db
-from schemas.user import UserModel, UserCreate, UserUpdate, User
+from schemas.user import UserCreate, UserUpdate, User, UserWithProfile
+from schemas.user_profile import UserProfileUpdate, UserProfile
 from typing import List
 
 
 user_router = APIRouter(prefix='/api/v1', tags=["User"])
+
+# TODO prefix微妙なので再考
+@user_router.get('/user_with_profile/{user_id}', response_model=UserWithProfile)
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    db_user = cruds.get_user_with_profile(db, user_id=user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail='User not found')
+    return db_user
+
 
 @user_router.get('/user/{user_id}', response_model=User)
 def read_user(user_id: int, db: Session = Depends(get_db)):
@@ -35,6 +45,17 @@ def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db)):
 @user_router.delete('/users/{user_id}')
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     cruds.delete_user(db=db, user_id=user_id)
+
+@user_router.get('/userprofile/{userprofile_id}', response_model=UserProfile)
+def read_userprofile(userprofile_id: int, db: Session = Depends(get_db)):
+    db_userprofile = cruds.get_userprofile(db, userprofile_id=userprofile_id)
+    if not db_userprofile:
+        raise HTTPException(status_code=404, detail='UserProfile not found')
+    return db_userprofile
+
+@user_router.put('/userprofile/{userprofile_id}', response_model=UserProfileUpdate)
+def update_userprofile(userprofile_id: int, userprofile: UserProfileUpdate, db: Session = Depends(get_db)):
+    return cruds.update_userprofile(db=db, userprofile_id=userprofile_id, userprofile=userprofile)
 
 # @user_router.get("/", response_model=List[UserModel], summary="UserModelの一覧を取得します")
 # async def get_users():

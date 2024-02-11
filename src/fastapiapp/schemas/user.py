@@ -1,27 +1,34 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 
-class UserModel(BaseModel):
+class UserBase(BaseModel):
     email: str
 
-class UserCreate(UserModel):
+class UserCreate(UserBase):
     password: str
 
-class UserUpdate(UserModel):
+class UserUpdate(UserBase):
     password: Optional[str] = None
 
-class UserInDBBase(UserModel):
+class User(UserBase):
     id: int
     status: bool
     created_at: datetime
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        # orm_mode = True
+        from_attributes = True
 
-class User(UserInDBBase):
-    pass
-
-class UserInDB(UserInDBBase):
-    password: str
+#! TODO UserProfileBaseも継承できないか？
+class UserWithProfile(User):
+    first_name: str
+    last_name: str
+    phone_number: str
+    postal_code: str
+    prefecture: str
+    city: str
+    address: str
+    date_of_birth: Optional[date] = None
+    icon_image: str
