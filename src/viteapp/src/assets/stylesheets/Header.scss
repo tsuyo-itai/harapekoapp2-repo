@@ -1,0 +1,128 @@
+
+//* ヘッダー関連
+
+/* 共通のスタイル */
+header {
+    display: flex;
+    // justify-content: space-between;
+    // align-items: center;
+    // padding: 1rem;
+    background-color: #333;
+    height: 80px;
+  
+    .header-logo {
+      text-decoration: none;
+      color: #fff;
+      font-size: 1.5rem;
+      margin: 0 auto;
+      font-weight: bold;
+    }
+  }
+  
+  .header-container {
+    display: flex;
+    width: 100%;
+    align-items: center; /* 中央寄せ */
+    padding: 1rem;
+  
+    .hamburger {
+      order: 1; /* ハンバーガーメニューを左寄せにする */
+  
+    }
+  
+    .header-logo {
+      order: 2; /* ロゴを右寄せにする */
+    }
+  }
+  
+  /* ハンバーガーメニューのスタイル */
+  .hamburger {
+    .bar {
+      width: 25px;
+      height: 3px;
+      background-color: #fff;
+      margin: 5px 0;
+    }
+  }
+  
+  /* ナビゲーションメニューのスタイル */
+  .nav-menu {
+    list-style: none; /* リストスタイルを削除 */
+    margin: 0;
+    padding: 0;
+  
+    li {
+        display: inline-block; /* メニュー項目を横並びに配置 */
+        margin-right: 20px; /* メニュー項目間の間隔 */
+    }
+  
+    a {
+        text-decoration: none; /* 下線を削除 */
+        color: #fff; /* メニューリンクのテキスト色 */
+        font-weight: bold; /* メニューリンクのフォントの太さ */
+        font-size: 16px; /* メニューリンクのフォントサイズ */
+  
+        &:hover {
+            color: #33a3a4; /* ホバー時のテキスト色 */
+        }
+    }
+  }
+  
+  //* サイドバー関連
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -250px; /* 初期位置を右側に隠しておく */
+    width: 250px;
+    height: 100%;
+    background-color: #333;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    margin-top: 80px;
+    transition: left 0.3s ease;
+    z-index: 5;     // 優先度上位 5 (この下に持ってくるなら4,3,2,1,0,-1..)
+  
+    .nav-menu {
+      list-style: none;
+      padding: 0;
+      margin: 1rem;
+      display: contents;
+  
+      li {
+        margin: 1rem;
+  
+        a {
+          text-decoration: none; /* 下線を削除 */
+          color: #fff; /* メニューリンクのテキスト色 */
+          font-weight: bold; /* メニューリンクのフォントの太さ */
+          font-size: 1rem; /* メニューリンクのフォントサイズ */
+    
+          &:hover {
+              color: #33a3a4; /* ホバー時のテキスト色 */
+          }
+        }
+      }
+    }
+  }
+  
+  .show-sidebar {
+    left: 0; /* 右端に移動させることで表示 */
+  }
+  
+  /* メディアクエリを使用して画面が狭い場合にハンバーガーメニューを表示 */
+  // TODO: 未検証
+  
+  @media (max-width: 768px) {
+    // .hamburger {
+    //   display: flex;
+    // }
+  
+    // .sidebar {
+    //   display: none;
+    // }
+  
+    .sidebar.active {
+      display: flex;
+    }
+  }

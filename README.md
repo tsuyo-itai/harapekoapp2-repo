@@ -141,3 +141,15 @@ fastapiapp
 ├── database.py // データベース設定管理
 └── main.py // エントリーポイント
 ```
+
+## フロント側開発
+
+### 導入パッケージ
+
+```
+npm install sass
+```
+
+「node-sass」は非推奨となってるので。「sass」のインストールでOK
+
+`App.css`を`App.scss`に名前変更
