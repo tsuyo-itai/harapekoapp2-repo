@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import "../assets/stylesheets/Header.scss"
+import { Link } from "react-router-dom";
 
 function Header() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -28,13 +29,14 @@ function Header() {
       <div className={`sidebar ${isSidebarOpen ? 'show-sidebar' : ''}`}>
         <ul className="nav-menu">
           <li>
-            <a href="/">ツールTOP</a>
+            <a href="/">ランチパスポート</a>
+            <span>使えるお店を探す</span>
           </li>
           <li>
             <a href="/">開発者ブログ</a>
           </li>
           <li>
-            <a href="/">お問い合わせ</a>
+            <Link to={`/edit`}>ユーザー情報編集</Link>
           </li>
         </ul>
       </div>

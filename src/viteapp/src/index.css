@@ -37,6 +37,18 @@ h1 {
   line-height: 1.1;
 }
 
+p {
+  color: #242424;
+}
+
+h4 {
+  color: #242424;
+}
+
+input {
+  color:#242424;
+}
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;
