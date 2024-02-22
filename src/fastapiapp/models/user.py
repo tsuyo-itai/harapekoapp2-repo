@@ -5,7 +5,6 @@ from db.database import Base
 from datetime import datetime
 from sqlalchemy.orm import relationship
 
-
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, index=True)
@@ -18,3 +17,5 @@ class User(Base):
 
     # UserProfile とのリレーションシップを定義
     profile = relationship("UserProfile", back_populates="user", cascade="all, delete-orphan")
+    # Subscription とのリレーションシップを定義
+    subscription = relationship("Subscription", back_populates="user")

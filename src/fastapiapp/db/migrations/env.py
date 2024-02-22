@@ -9,8 +9,7 @@ import os
 from dotenv import load_dotenv
 
 from db.database import Base
-from models.user import User
-from models.user_profile import UserProfile
+from models import *
 
 load_dotenv(verbose=True)
 dotenv_path = os.path.join(os.path.dirname(__file__), '../.env')

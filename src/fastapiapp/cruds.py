@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 
-from models.user import User
-from models.user_profile import UserProfile
+from models import User, UserProfile
 from schemas.user import UserCreate, UserUpdate
 from schemas.user_profile import UserProfileUpdate
 
