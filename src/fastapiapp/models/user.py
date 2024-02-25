@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, Boolean, DateTime
+from sqlalchemy import Table, Column, Boolean, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.sql.sqltypes import Integer, String
 from db.database import Base
@@ -14,6 +14,10 @@ class User(Base):
     # これserver_defaultはutcになっている。DBのデフォルト時刻を変更する必要がありそう？
     created_at = Column(DateTime(timezone=True), server_default=func.now(), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Subscription とのリレーションシップを定義
+    subscription_id = Column(Integer, ForeignKey('subscriptions.id'))
+    subscription = relationship("Subscription", back_populates="user")
 
     # UserProfile とのリレーションシップを定義
     profile = relationship("UserProfile", back_populates="user", cascade="all, delete-orphan")

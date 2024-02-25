@@ -1,8 +1,8 @@
-"""models_add
+"""model_add
 
-Revision ID: 67661f1272b9
+Revision ID: c65c7d3fde07
 Revises: 
-Create Date: 2024-02-17 18:34:47.867454
+Create Date: 2024-02-25 14:17:43.517504
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '67661f1272b9'
+revision: str = 'c65c7d3fde07'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -48,16 +48,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_stores_id'), 'stores', ['id'], unique=False)
-    op.create_table('users',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('email', sa.String(length=255), nullable=True),
-    sa.Column('password', sa.String(length=255), nullable=True),
-    sa.Column('status', sa.Boolean(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
     op.create_table('store_subscriptions',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('status', sa.Boolean(), nullable=True),
@@ -81,34 +71,11 @@ def upgrade() -> None:
     sa.Column('end_date', sa.Date(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('plan_id', sa.Integer(), nullable=False),
+    sa.Column('plan_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['plan_id'], ['plans.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_subscriptions_id'), 'subscriptions', ['id'], unique=False)
-    op.create_index(op.f('ix_subscriptions_plan_id'), 'subscriptions', ['plan_id'], unique=False)
-    op.create_index(op.f('ix_subscriptions_user_id'), 'subscriptions', ['user_id'], unique=False)
-    op.create_table('user_profiles',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('first_name', sa.String(length=50), nullable=True),
-    sa.Column('last_name', sa.String(length=50), nullable=True),
-    sa.Column('phone_number', sa.String(length=24), nullable=True),
-    sa.Column('postal_code', sa.String(length=12), nullable=True),
-    sa.Column('prefecture', sa.String(length=255), nullable=True),
-    sa.Column('city', sa.String(length=255), nullable=True),
-    sa.Column('address', sa.String(length=255), nullable=True),
-    sa.Column('date_of_birth', sa.Date(), nullable=True),
-    sa.Column('icon_image', sa.String(length=1024), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_user_profiles_id'), 'user_profiles', ['id'], unique=False)
-    op.create_index(op.f('ix_user_profiles_user_id'), 'user_profiles', ['user_id'], unique=False)
     op.create_table('store_menus',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=True),
@@ -140,11 +107,47 @@ def upgrade() -> None:
     op.create_index(op.f('ix_subscription_uses_id'), 'subscription_uses', ['id'], unique=False)
     op.create_index(op.f('ix_subscription_uses_store_id'), 'subscription_uses', ['store_id'], unique=False)
     op.create_index(op.f('ix_subscription_uses_subscription_id'), 'subscription_uses', ['subscription_id'], unique=False)
+    op.create_table('users',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('email', sa.String(length=255), nullable=True),
+    sa.Column('password', sa.String(length=255), nullable=True),
+    sa.Column('status', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('subscription_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['subscription_id'], ['subscriptions.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+    op.create_table('user_profiles',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('first_name', sa.String(length=50), nullable=True),
+    sa.Column('last_name', sa.String(length=50), nullable=True),
+    sa.Column('phone_number', sa.String(length=24), nullable=True),
+    sa.Column('postal_code', sa.String(length=12), nullable=True),
+    sa.Column('prefecture', sa.String(length=255), nullable=True),
+    sa.Column('city', sa.String(length=255), nullable=True),
+    sa.Column('address', sa.String(length=255), nullable=True),
+    sa.Column('date_of_birth', sa.Date(), nullable=True),
+    sa.Column('icon_image', sa.String(length=1024), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_user_profiles_id'), 'user_profiles', ['id'], unique=False)
+    op.create_index(op.f('ix_user_profiles_user_id'), 'user_profiles', ['user_id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_user_profiles_user_id'), table_name='user_profiles')
+    op.drop_index(op.f('ix_user_profiles_id'), table_name='user_profiles')
+    op.drop_table('user_profiles')
+    op.drop_index(op.f('ix_users_id'), table_name='users')
+    op.drop_table('users')
     op.drop_index(op.f('ix_subscription_uses_subscription_id'), table_name='subscription_uses')
     op.drop_index(op.f('ix_subscription_uses_store_id'), table_name='subscription_uses')
     op.drop_index(op.f('ix_subscription_uses_id'), table_name='subscription_uses')
@@ -153,19 +156,12 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_store_menus_store_id'), table_name='store_menus')
     op.drop_index(op.f('ix_store_menus_id'), table_name='store_menus')
     op.drop_table('store_menus')
-    op.drop_index(op.f('ix_user_profiles_user_id'), table_name='user_profiles')
-    op.drop_index(op.f('ix_user_profiles_id'), table_name='user_profiles')
-    op.drop_table('user_profiles')
-    op.drop_index(op.f('ix_subscriptions_user_id'), table_name='subscriptions')
-    op.drop_index(op.f('ix_subscriptions_plan_id'), table_name='subscriptions')
     op.drop_index(op.f('ix_subscriptions_id'), table_name='subscriptions')
     op.drop_table('subscriptions')
     op.drop_index(op.f('ix_store_subscriptions_store_id'), table_name='store_subscriptions')
     op.drop_index(op.f('ix_store_subscriptions_plan_id'), table_name='store_subscriptions')
     op.drop_index(op.f('ix_store_subscriptions_id'), table_name='store_subscriptions')
     op.drop_table('store_subscriptions')
-    op.drop_index(op.f('ix_users_id'), table_name='users')
-    op.drop_table('users')
     op.drop_index(op.f('ix_stores_id'), table_name='stores')
     op.drop_table('stores')
     op.drop_index(op.f('ix_plans_id'), table_name='plans')

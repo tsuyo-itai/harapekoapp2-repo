@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, date
-from schemas.user import UserBase
 from schemas.plan import PlanBase
 
 
@@ -15,7 +14,6 @@ class SubscriptionCreate(SubscriptionBase):
 
 class Subscription(SubscriptionBase):
     id: int
-    user_id: Optional[int]
     plan_id: Optional[int]
     created_at: datetime
     updated_at: datetime
@@ -24,12 +22,5 @@ class Subscription(SubscriptionBase):
         # orm_mode = True
         from_attributes = True
 
-class SubscriptionWithUser(SubscriptionBase):
-    user: Optional[UserBase]
-
 class SubscriptionWithPlan(SubscriptionBase):
-    plan: Optional[PlanBase]
-
-class SubscriptionWithUserAndPlan(SubscriptionBase):
-    user: Optional[UserBase]
     plan: Optional[PlanBase]

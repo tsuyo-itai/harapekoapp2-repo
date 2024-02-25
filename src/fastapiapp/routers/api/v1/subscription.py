@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from cruds import cruds_subscription
 from db.database import get_db
 from schemas.plan import PlanCreate, Plan, PlanUpdate
-from schemas.subscription import SubscriptionCreate, Subscription, SubscriptionWithUserAndPlan
+from schemas.subscription import SubscriptionCreate, Subscription, SubscriptionWithPlan
 from typing import List
 
 
@@ -19,7 +19,7 @@ def read_subscriptions(limit: int = 10, db: Session = Depends(get_db)):
     subscriptions = cruds_subscription.get_subscriptions(db, limit=limit)
     return subscriptions
 
-@subscription_router.get('/subscription/{subscription_id}', response_model=SubscriptionWithUserAndPlan)
+@subscription_router.get('/subscription/{subscription_id}', response_model=SubscriptionWithPlan)
 def read_subscription(subscription_id: int, db: Session = Depends(get_db)):
     db_subscription = cruds_subscription.get_subscription(db, subscription_id=subscription_id)
     if not db_subscription:
@@ -53,3 +53,7 @@ def create_plan(plan: PlanCreate, db: Session = Depends(get_db)):
 @plan_router.put('/plan/{plan_id}', response_model=Plan)
 def update_plan(plan_id: int, plan: PlanUpdate, db: Session = Depends(get_db)):
     return cruds_subscription.update_plan(db=db, plan_id=plan_id, plan=plan)
+
+@plan_router.delete('/plan/{plan_id}')
+def delete_plan(plan_id: int, db: Session = Depends(get_db)):
+    cruds_subscription.delete_plan(db=db, plan_id=plan_id)

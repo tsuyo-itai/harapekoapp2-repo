@@ -53,3 +53,8 @@ def update_plan(db: Session, plan_id: int, plan: PlanUpdate):
     db_plan.rank = plan.rank
     db.commit()
     return db_plan
+
+def delete_plan(db: Session, plan_id: int):
+    db_plan = db.query(Plan).filter(Plan.id == plan_id).first()
+    db.delete(db_plan)
+    db.commit()

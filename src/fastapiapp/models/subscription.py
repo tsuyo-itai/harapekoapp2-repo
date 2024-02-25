@@ -14,13 +14,12 @@ class Subscription(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # User とのリレーションシップを定義
-    user_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship("User", back_populates="subscription")
-
     # Plan とのリレーションシップを定義
     plan_id = Column(Integer, ForeignKey('plans.id'))
     plan = relationship("Plan", back_populates="subscription")
+
+    # User とのリレーションを定義
+    user = relationship("User", back_populates="subscription")
 
     # SubscriptionUse とのリレーションを定義
     subscription_use = relationship("SubscriptionUse", back_populates="subscription")

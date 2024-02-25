@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, date
+from schemas.subscription import SubscriptionBase
 
 class UserBase(BaseModel):
     email: str
@@ -20,6 +21,9 @@ class User(UserBase):
     class Config:
         # orm_mode = True
         from_attributes = True
+
+class UserWithSubscription(User):
+    subscription: Optional[SubscriptionBase]
 
 #! TODO UserProfileBaseも継承できないか？
 class UserWithProfile(User):

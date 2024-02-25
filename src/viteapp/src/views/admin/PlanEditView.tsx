@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaTrash } from 'react-icons/fa';
 import axios from 'axios';
 import "../../assets/stylesheets/Base.scss"
 import "../../assets/stylesheets/Header.scss"
+import "../../assets/stylesheets/Components.scss"
 import Header from '../../components/Header';
 
 interface Plan {
@@ -11,6 +13,14 @@ interface Plan {
     price: number;
     rank: number;
 }
+
+interface TrashIconProps {
+  onClick: () => void;
+}
+
+const TrashIcon: React.FC<TrashIconProps> = ({ onClick }) => {
+  return <FaTrash onClick={onClick} className="trash-icon"/>;
+};
 
 // プランカードのコンポーネント
 const PlanCard: React.FC<{ plan: Plan }> = ({ plan }) => {
@@ -81,7 +91,25 @@ const PlanList: React.FC<{ plans: Plan[] }> = ({ plans }) => {
         // 苦肉の策なので見直しは行うこと
         window.location.reload();
   };
+
+    const DeletePlan = async () => {
+      try {
+        // PUTリクエストを送信
+        const response = await axios.delete(`http://localhost:8000/api/v1/plan/${Editplan.id}`);
   
+        // リクエストが成功した場合の処理
+        console.log('Delete request successful:', response.data);
+        window.alert("Planの削除が完了しました");
+      } catch (error) {
+        // エラーハンドリング
+        console.error('Delete request failed:', error);
+      }
+      setSelectedPlan(null);
+      setIsEditPlan(null);
+      // 苦肉の策なので見直しは行うこと
+      window.location.reload();
+    }
+
     return (
       <div className="plan-list">
         {plans.map((plan) => (
@@ -120,6 +148,8 @@ const PlanList: React.FC<{ plans: Plan[] }> = ({ plans }) => {
                       onChange={handleChange}
                       className="form-text-box"
                     />
+                  
+                  <TrashIcon onClick={DeletePlan}/>
                   <div className='flex-container'>
                     <button onClick={UpdatePlan}>更新</button>
                     <button onClick={() => setSelectedPlan(null)}>閉じる</button>
@@ -155,6 +185,14 @@ const PlanEditView = () => {
       price: 0,
       rank: 0
     });
+
+    type Tab = 'FirstTab' | 'SecondTab'; // タブの型定義
+
+    const [activeTab, setActiveTab] = useState('FirstTab');
+
+    const switchTab = (tab: Tab) => {
+        setActiveTab(tab);
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -212,48 +250,72 @@ const PlanEditView = () => {
     return (
         <>
           <Header />
-          <h2>Available Plans</h2>
-          <button onClick={handleAddPlanButton}>プランの追加</button>
-          <PlanList plans={plans} />
 
-          {/* モーダル */}
-          {IsAddPlan && (
-            <div className="plan-modal">
-              <div className="plan-modal-content">
-                <h2>新規プラン追加</h2>
-                <h4>プラン名称</h4>
-                <input
-                  type="text"
-                  name="name"
-                  value={Inputplan.name}
-                  onChange={handleChange}
-                  className="form-text-box"
-                />
-                <h4>価格</h4>
-                <input
-                  type="number"
-                  name="price"
-                  value={Inputplan.price}
-                  onChange={handleChange}
-                  className="form-text-box"
-                />
-                <h4>ランク</h4>
-                <input
-                  type="number"
-                  name="rank"
-                  value={Inputplan.rank}
-                  onChange={handleChange}
-                  className="form-text-box"
-                />
-  
-                {/* 他のプランの情報も表示する場合はここに追加 */}
-                <div className='flex-container'>
-                  <input type="submit" value="登録" onClick={CreatePlan} className="submit-button" />
-                  <input  type="button" value="キャンセル" onClick={handleAddPlanButton} className="submit-button-cancel" />
+          <div className="tab-buttons">
+            <button onClick={() => switchTab('FirstTab')} className={activeTab === 'FirstTab' ? 'active' : ''}>
+              プラン
+            </button>
+            <button onClick={() => switchTab('SecondTab')} className={activeTab === 'SecondTab' ? 'active' : ''}>
+              サブスクリプション
+            </button>
+            {/* 他のタブがあればここに追加 */}
+          </div>
+
+          {activeTab === 'FirstTab' && (
+            <div>
+              <h2>Available Plans</h2>
+              <button onClick={handleAddPlanButton}>プランの追加</button>
+              <PlanList plans={plans} />
+    
+              {/* モーダル */}
+              {IsAddPlan && (
+                <div className="plan-modal">
+                  <div className="plan-modal-content">
+                    <h2>新規プラン追加</h2>
+                    <h4>プラン名称</h4>
+                    <input
+                      type="text"
+                      name="name"
+                      value={Inputplan.name}
+                      onChange={handleChange}
+                      className="form-text-box"
+                    />
+                    <h4>価格</h4>
+                    <input
+                      type="number"
+                      name="price"
+                      value={Inputplan.price}
+                      onChange={handleChange}
+                      className="form-text-box"
+                    />
+                    <h4>ランク</h4>
+                    <input
+                      type="number"
+                      name="rank"
+                      value={Inputplan.rank}
+                      onChange={handleChange}
+                      className="form-text-box"
+                    />
+      
+                    {/* 他のプランの情報も表示する場合はここに追加 */}
+                    <div className='flex-container'>
+                      <input type="submit" value="登録" onClick={CreatePlan} className="submit-button" />
+                      <input  type="button" value="キャンセル" onClick={handleAddPlanButton} className="submit-button-cancel" />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
+
+          {activeTab === 'SecondTab' && (
+            <div>
+              {/* ユーザーリストの内容 */}
+              <h2>Available Subscriptions</h2>
+              {/* ここにユーザーリストのコンテンツを追加 */}
+            </div>
+          )}
+
         </>
     );
 };

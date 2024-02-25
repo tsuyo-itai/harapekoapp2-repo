@@ -1,0 +1,30 @@
+.tab-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 25px;;
+  }
+  
+.tab-buttons button {
+    padding: 10px 20px;
+    width: 200px;
+    cursor: pointer;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+  
+.tab-buttons button.active {
+    background-color: #5994bb;
+    font-weight: bold;
+}
+
+.trash-icon {
+    padding: 10px; /* ゴミ箱アイコンの周りに余白を追加 */
+    border-radius: 50px; /* 角を丸くする */
+    cursor: pointer; /* ホバー時にカーソルを変更 */
+}
+
+.trash-icon:hover {
+  background-color: #ff8888; /* ホバー時の背景色 */
+}

@@ -22,6 +22,12 @@ def get_user_with_profile(db: Session, user_id: int):
 
     return user
 
+def get_user_with_subscription(db: Session, user_id: int):
+    return db.query(User) \
+        .options(joinedload(User.subscription, innerjoin=False))\
+        .filter(User.id == user_id) \
+        .first()
+
 def get_user(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
 

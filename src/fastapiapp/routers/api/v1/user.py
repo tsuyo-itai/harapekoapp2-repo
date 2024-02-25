@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from sqlalchemy.orm import Session
 from cruds import cruds_user
 from db.database import get_db
-from schemas.user import UserCreate, UserUpdate, User, UserWithProfile
+from schemas.user import UserCreate, UserUpdate, User, UserWithProfile, UserWithSubscription
 from schemas.user_profile import UserProfileUpdate, UserProfile
 from typing import List
 
@@ -13,6 +13,13 @@ user_router = APIRouter(prefix='/api/v1', tags=["User"])
 @user_router.get('/user_with_profile/{user_id}', response_model=UserWithProfile)
 def read_user(user_id: int, db: Session = Depends(get_db)):
     db_user = cruds_user.get_user_with_profile(db, user_id=user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail='User not found')
+    return db_user
+
+@user_router.get('/user_with_subscription/{user_id}', response_model=UserWithSubscription)
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    db_user = cruds_user.get_user_with_subscription(db, user_id=user_id)
     if not db_user:
         raise HTTPException(status_code=404, detail='User not found')
     return db_user
